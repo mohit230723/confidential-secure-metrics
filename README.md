@@ -1,73 +1,39 @@
-# Welcome to your Lovable project
+# Confidential Secure Metrics for Algorand
 
-## Project info
+## Overview
 
-**URL**: https://lovable.dev/projects/dd1f5a88-c066-4ff8-b846-d8f4429a3736
+The **Confidential Secure Metrics for Algorand** project enables secure, privacy-preserving analytics on sensitive financial and supply chain data. It uses **Homomorphic Encryption (HE)** and **OCR** technologies to analyze confidential documents without exposing raw data, ensuring that sensitive information remains private throughout the process.
 
-## How can I edit this code?
+## Features
+- **Homomorphic Encryption (HE)**: Performs computations on encrypted data, allowing analysis without exposing sensitive information.
+- **OCR for Document Analysis**: Extracts relevant data from uploaded documents (CSV, JSON, Images) for analysis.
+- **Confidential Analytics**: Provides encrypted analysis results, ensuring complete privacy of data.
 
-There are several ways of editing your application.
+## Setup & Installation
 
-**Use Lovable**
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/mohit230723/confidential-secure-metrics.git
+2. **Install backend dependencies**:
+   ```bash
+   cd backend
+   npm install
+3. **Run the backend development server**:
+   ```bash
+   npm run dev
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dd1f5a88-c066-4ff8-b846-d8f4429a3736) and start prompting.
+## Architecture
+**Frontend**
+- **Data Upload**: Users upload documents in various formats (CSV, JSON, Images).
+- **Client-Side Encryption**: Data is encrypted locally in the browser using Paillier encryption. The public key is retrieved from the backend for encryption.
+- **Submit Encrypted Data**: Encrypted metrics are submitted to the backend for aggregation and further processing.
+- **Auditor Decryption**: The backend decrypts the aggregated data for authorized auditors to view the result.
 
-Changes made via Lovable will be committed automatically to this repo.
+**Backend**
+- **Paillier Key Management**: Generates and stores Paillier public and private keys.
+- **Ciphertext Storage**: Encrypted data (ciphertexts) and aggregated results are stored securely on algorand.
+- **Homomorphic Aggregation**: The backend performs encrypted aggregation (sum, average, etc.) without ever decrypting the data.
+- **Auditor Decryption**: Allows authorized users to decrypt the final aggregated result.
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/dd1f5a88-c066-4ff8-b846-d8f4429a3736) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Deployed Links
+**Frontend Link**:
