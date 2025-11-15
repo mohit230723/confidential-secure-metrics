@@ -1,3 +1,4 @@
+// App.tsx (wrap with WalletProvider)
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +15,9 @@ import HowItWorks from "./pages/HowItWorks";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 
+// NEW:
+import { WalletProvider } from "@/contexts/WalletContext";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -21,20 +25,22 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <CustomCursor />
-        <Navigation />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/platform" element={<Platform />} />
-          <Route path="/algorithms" element={<Algorithms />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/about" element={<About />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Footer />
-      </BrowserRouter>
+      <WalletProvider>
+        <BrowserRouter>
+          <CustomCursor />
+          <Navigation />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/platform" element={<Platform />} />
+            <Route path="/algorithms" element={<Algorithms />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/about" element={<About />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Footer />
+        </BrowserRouter>
+      </WalletProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
