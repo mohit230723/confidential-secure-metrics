@@ -54,7 +54,7 @@ Backend will run on `http://localhost:3000`
 View published encrypted metrics on Algorand TestNet Explorer:
 
 **Example Transaction**:
-- [https://lora.algokit.io/testnet/transaction/YOUR_TX_ID_HERE](https://lora.algokit.io/testnet/transaction/YOUR_TX_ID_HERE)
+- [https://lora.algokit.io/testnet/transaction/VURJMRHP74E6VGQJZTTEUIXHCYEFG6HW2A6KFPMLT67XLP76RXDA](https://lora.algokit.io/testnet/transaction/VURJMRHP74E6VGQJZTTEUIXHCYEFG6HW2A6KFPMLT67XLP76RXDA)
 
 *Note: Transaction IDs are generated dynamically when users publish encrypted metrics via Pera Wallet*
 
