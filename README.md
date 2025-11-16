@@ -47,7 +47,8 @@ Backend will run on `http://localhost:3000`
 ## 🔗 Deployed Links
 
 ### 🌐 Live Demo
-**Frontend (Vercel)**: [https://your-deployment.vercel.app](https://your-deployment.vercel.app)
+**Frontend (Vercel)**: [confidential-secure-metrics.vercel.app](confidential-secure-metrics.vercel.app)
+(This is an old version newer version will be updated soon after fixing issues with some server problems)
 
 ### 📍 Algorand TestNet Transactions
 View published encrypted metrics on Algorand TestNet Explorer:
