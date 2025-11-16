@@ -210,7 +210,7 @@ View published encrypted metrics on Algorand TestNet Explorer:
 
 - **Algorand Foundation** for the blockchain infrastructure
 - **Pera Wallet** for seamless wallet integration
-- **Microsoft SEAL / TenSEAL** for homomorphic encryption research
+- **Paillier** for homomorphic encryption research
 - **Lora AlgoKit** for the excellent TestNet explorer
 
 ---
