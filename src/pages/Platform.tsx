@@ -1,6 +1,4 @@
-// Platform.tsx  (fixed: robust API helper + all fetch calls use apiFetch)
-// Drop-in replacement: parsing + OCR via server; no client-side Tesseract.
-
+// Platform.tsx (Updated to use use-wallet hook)
 import { useState } from "react";
 import { Upload, FileText, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,13 +13,17 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import Papa from "papaparse";
+// ----- 1. REMOVED OLD IMPORT -----
+// import { publishCiphertextWithPera } from "@/lib/algorandPublish";
+
+// ----- 2. ADDED NEW IMPORTS -----
+import { useWallet } from "@txnlab/use-wallet-react";
+import algosdk from "algosdk";
+
 
 /* -----------------------
    API helper (robust)
-   -----------------------
-   - Forces backend to http://localhost:3000 in local dev (avoids hitting frontend index.html)
-   - Throws descriptive errors if server returns HTML or non-2xx
-*/
+   ----------------------- */
 const API_BASE = (() => {
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     return "http://localhost:3000";
@@ -30,6 +32,7 @@ const API_BASE = (() => {
 })();
 
 async function apiFetch(path: string, opts?: RequestInit) {
+  // ... (API fetch function remains unchanged)
   const url = path.startsWith("http") ? path : API_BASE + path;
   const res = await fetch(url, opts);
 
@@ -67,6 +70,13 @@ export default function Platform() {
   const [aggregateCid, setAggregateCid] = useState<string | null>(null);
   const [decryptedAggregate, setDecryptedAggregate] = useState<number | null>(null);
 
+  // tx result state
+  const [publishing, setPublishing] = useState(false);
+  const [lastTxId, setLastTxId] = useState<string | null>(null);
+  
+  // ----- 3. ADDED USE-WALLET HOOK -----
+  const { activeAccount, transactionSigner, algodClient } = useWallet();
+
   const algorithms = [
     { value: "paillier", label: "Paillier — Secure Sum (MVP)", desc: "Implemented: additive HE for sums." },
     { value: "ckks", label: "CKKS — Full Arithmetic (coming soon)", desc: "Coming soon." },
@@ -75,6 +85,7 @@ export default function Platform() {
 
   // helpers
   function maybeNumber(v: any) {
+    // ... (function unchanged)
     if (v === null || v === undefined) return null;
     const s = String(v).replace(/[$,]/g, "").trim();
     if (s === "") return null;
@@ -83,6 +94,7 @@ export default function Platform() {
   }
 
   function normalizeColumns(obj: any) {
+    // ... (function unchanged)
     const keys = Object.keys(obj || {});
     const normalized: any = {};
     for (const k of keys) {
@@ -103,6 +115,7 @@ export default function Platform() {
   }
 
   function parseCsvText(text: string) {
+    // ... (function unchanged)
     const parsed = Papa.parse(text, { header: true, skipEmptyLines: true, dynamicTyping: false });
     if (parsed.errors && parsed.errors.length > 0) {
       throw new Error("CSV parse error: " + parsed.errors[0].message);
@@ -117,6 +130,7 @@ export default function Platform() {
   }
 
   function parsePlainText(text: string) {
+    // ... (function unchanged)
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     const out: any[] = [];
     for (const line of lines) {
@@ -147,6 +161,7 @@ export default function Platform() {
 
   // ===== file upload handler =====
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // ... (function unchanged)
     setParseError(null);
     setExtractedData(null);
     const file = e.target.files?.[0];
@@ -187,9 +202,7 @@ export default function Platform() {
         // send to server OCR endpoint using apiFetch (FormData)
         const fd = new FormData();
         fd.append("file", file);
-        // apiFetch wrapper expects JSON for most endpoints, but it can handle form POSTs too
         const resp = await apiFetch("/api/ocr", { method: "POST", body: fd });
-        // resp is parsed JSON (server returns { rows, text } or { rows: [], text: ... })
         const j = resp as any;
         if (!j) throw new Error("No response from OCR endpoint");
         if (j.rows && j.rows.length > 0) {
@@ -217,6 +230,7 @@ export default function Platform() {
   };
 
   function computeDemoMetric(data: any) {
+    // ... (function unchanged)
     if (!data?.preview) return 0;
     let sum = 0;
     for (const r of data.preview) {
@@ -228,6 +242,7 @@ export default function Platform() {
   }
 
   function bigintToBase64(bn: bigint) {
+    // ... (function unchanged)
     let hex = bn.toString(16);
     if (hex.length % 2) hex = "0" + hex;
     const bytes = hex.match(/../g)!.map((h) => parseInt(h, 16));
@@ -236,6 +251,7 @@ export default function Platform() {
   }
 
   const handleEncryptAndSubmit = async () => {
+    // ... (function unchanged)
     if (!algorithm || !uploadedFile || !extractedData) {
       toast.error("Please select algorithm and upload a parsable file first");
       return;
@@ -287,6 +303,7 @@ export default function Platform() {
   };
 
   const handleFetchAggregate = async () => {
+    // ... (function unchanged)
     try {
       const j = await apiFetch("/api/aggregate") as any;
       setAggregateCid(j.aggregateCid || null);
@@ -297,6 +314,7 @@ export default function Platform() {
   };
 
   const handleDecryptAggregate = async () => {
+    // ... (function unchanged)
     try {
       const j = await apiFetch("/api/decrypt") as any;
       setDecryptedAggregate(Number(j.plaintext) / (j.scale || 100));
@@ -307,6 +325,7 @@ export default function Platform() {
   };
 
   const handleAnalyze = () => {
+    // ... (function unchanged)
     if (!algorithm || !uploadedFile) {
       toast.error("Please pick algorithm and upload file");
       return;
@@ -316,6 +335,72 @@ export default function Platform() {
     toast.success("File parsed — review preview and Confirm & Encrypt to submit");
   };
 
+  // ---------------------------
+  // ----- 4. REWRITTEN PUBLISH FUNCTION -----
+  // This now uses the use-wallet hook and algosdk
+  // ---------------------------
+  async function publishViaPera() {
+    if (!lastSubmissionId) {
+      toast.error("No submission available. First Confirm & Encrypt.");
+      return;
+    }
+
+    // Check for active account from use-wallet
+    if (!activeAccount) {
+      toast.error("Please connect your wallet first.");
+      // Here you could add logic to open your modal if you pass down the function
+      // e.g., openWalletModal();
+      return;
+    }
+
+    setPublishing(true);
+    setLastTxId(null);
+
+    try {
+      // 1. Fetch the ciphertext from our backend (same as before)
+      const j = await apiFetch(`/api/getSubmission?id=${encodeURIComponent(lastSubmissionId)}`) as any;
+      if (!j || !j.ciphertext) throw new Error("Server returned no ciphertext for this submission id");
+      const ciphertextB64: string = j.ciphertext;
+
+      // 2. Get algodClient and params (from use-wallet)
+      // No need to create a new client, the hook provides it!
+      const sp = await algodClient.getTransactionParams().do();
+      const noteBytes = new TextEncoder().encode(ciphertextB64);
+
+      // 3. Build the transaction (using algosdk)
+      const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+        sender: activeAccount.address, // Correct address from the hook
+        receiver: activeAccount.address,   // Send to self
+        amount: 0,                   // 0-ALGO transaction
+        note: noteBytes,
+        suggestedParams: sp,
+      });
+
+      // 4. Sign the transaction (using use-wallet)
+      // The hook needs the transaction as Transaction object in a group
+      const signedTxns = await transactionSigner([txn], [0]);
+      
+      // 5. Send the transaction (using algodClient)
+      // Manually submit the signed transaction
+      const txResp = await algodClient.sendRawTransaction(signedTxns).do();
+      const txId = txResp.txid;
+      
+      // Wait for confirmation
+      await algosdk.waitForConfirmation(algodClient, txId, 4);
+
+      // 6. Set state and notify user
+      setLastTxId(txId);
+      toast.success("Published on Algorand. TxID: " + txId);
+
+    } catch (err: any) {
+      console.error("Publish error:", err);
+      toast.error("Publish failed: " + (err?.message || String(err)));
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  // UI (unchanged)
   return (
     <div className="min-h-screen pt-24 pb-12 px-4">
       <div className="container mx-auto max-w-7xl">
@@ -398,6 +483,20 @@ export default function Platform() {
                         Decrypted aggregate (auditor): ${decryptedAggregate.toFixed(2)}
                       </div>
                     )}
+                    {/* UPDATED: Link to Lora Explorer */}
+                    {lastTxId && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Last published tx:{" "}
+                        <a
+                          target="_blank"
+                          rel="noreferrer"
+                          href={`https://lora.algokit.io/testnet/transaction/${lastTxId}`}
+                          className="underline text-blue-600"
+                        >
+                          {lastTxId} (View on Lora Explorer)
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -459,6 +558,42 @@ export default function Platform() {
               <div className="mt-6 p-4 rounded-lg border-dashed border border-muted">
                 <div className="text-sm"><strong>CKKS integration:</strong> Coming soon — full homomorphic arithmetic for floats and multiplications.</div>
               </div>
+
+              {/* Publish controls */}
+              {lastSubmissionId && (
+                <div className="mt-6 p-4 bg-muted rounded-lg border">
+                  <h4 className="font-medium mb-2">Publish on Algorand</h4>
+                  <div className="text-sm mb-3">
+                    Publish your encrypted submission on Algorand using your connected wallet. This stores ciphertext only (in tx note).
+                  </div>
+
+                  <div className="flex gap-2">
+                    {/* Updated Button Text and Action */}
+                    <Button onClick={publishViaPera} disabled={publishing}>
+                      {publishing ? "Publishing..." : `Publish (${activeAccount?.address.slice(0, 4)}...)`}
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      onClick={async () => {
+                        try {
+                          const j = await apiFetch(`/api/getSubmission?id=${encodeURIComponent(lastSubmissionId)}`) as any;
+                          if (!j || !j.ciphertext) {
+                            toast.error("Server has no ciphertext for this submission id");
+                            return;
+                          }
+                          await navigator.clipboard.writeText(j.ciphertext);
+                          toast.success("Ciphertext copied to clipboard");
+                        } catch (err: any) {
+                          toast.error("Failed to copy ciphertext: " + (err?.message || String(err)));
+                        }
+                      }}
+                    >
+                      Copy ciphertext
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-4">
                 <Button onClick={handleDecryptAggregate} variant="secondary" className="w-full">Auditor: Decrypt Aggregate (demo)</Button>

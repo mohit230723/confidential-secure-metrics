@@ -14,9 +14,17 @@ import History from "./pages/History";
 import HowItWorks from "./pages/HowItWorks";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import { WalletProvider, WalletManager, NetworkId, WalletId } from '@txnlab/use-wallet-react';
 
-// NEW:
-import { WalletProvider } from "@/contexts/WalletContext";
+const walletManager = new WalletManager({
+  wallets: [
+    WalletId.PERA,
+    WalletId.DEFLY,
+    WalletId.EXODUS,
+    // Add more as needed
+  ],
+  defaultNetwork: NetworkId.TESTNET, // or MAINNET
+});
 
 const queryClient = new QueryClient();
 
@@ -25,7 +33,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <WalletProvider>
+      <WalletProvider manager={walletManager}>
         <BrowserRouter>
           <CustomCursor />
           <Navigation />

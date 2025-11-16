@@ -178,6 +178,37 @@ app.post("/api/submit", (req, res) => {
   }
 });
 
+// --- ADD THIS NEW ENDPOINT ---
+// This handles the request from your frontend to get a specific submission's data
+app.get("/api/getSubmission", (req, res) => {
+  try {
+    const { id } = req.query; // Get the id from the URL query (e.g., ?id=sub_12345)
+    
+    if (typeof id !== "string") {
+      return res.status(400).json({ error: "Missing or invalid 'id' parameter" });
+    }
+
+    // Find the submission in our in-memory array
+    const submission = ciphertexts.find(sub => sub.id === id);
+
+    if (!submission) {
+      // If no submission is found with that ID, return a 404
+      return res.status(404).json({ error: "Submission not found" });
+    }
+
+    // If found, return the submission's ciphertext
+    res.status(200).json({
+      id: submission.id,
+      ciphertext: submission.ciphertext 
+    });
+
+  } catch (err) {
+    console.error("getSubmission error:", err);
+    return res.status(500).json({ error: "internal" });
+  }
+});
+// --- END OF NEW ENDPOINT ---
+
 app.get("/api/aggregate", (req, res) => {
   try {
     if (!publicKey) return res.status(500).json({ error: "keys not ready" });

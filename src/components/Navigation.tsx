@@ -1,15 +1,24 @@
+"use client";
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X, Lock } from "lucide-react";
 import { Button } from "./ui/button";
+import { ConnectWalletButton } from "./connect-wallet-button";
+import ConnectWalletModal from "./connect-wallet-modal";
+import { useWallet } from "@txnlab/use-wallet-react";
 
 export const Navigation = () => {
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
+  const { wallets, activeAccount } = useWallet();
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleConnectWallet = () => {
-    setIsWalletConnected(!isWalletConnected);
-  };
+  const walletConnected = !!activeAccount;
+  const walletAddress = activeAccount?.address || "";
+
+  function openWalletModal() {
+    setWalletModalOpen(true);
+  }
 
   const navItems = [
     { label: "Try Platform", href: "/platform" },
@@ -20,44 +29,51 @@ export const Navigation = () => {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-radius-sm shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
+          
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 text-xl font-bold hover:text-primary transition-colors">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-xl font-bold hover:text-primary transition-colors"
+          >
             <Lock className="w-5 h-5 text-primary" />
             <span>CSM</span>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Nav Links */}
           <div className="hidden md:flex items-center gap-6">
-            {isWalletConnected && (
-              <>
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </>
+            {walletConnected &&
+              navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+          </div>
+
+          {/* Desktop Wallet Button */}
+          <div className="hidden md:block">
+            {!walletConnected ? (
+              <Button onClick={openWalletModal} className="font-semibold">
+                Connect Wallet
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                onClick={openWalletModal}
+                className="font-semibold"
+              >
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </Button>
             )}
           </div>
 
-          {/* Wallet Button */}
-          <div className="hidden md:block">
-            <Button
-              onClick={handleConnectWallet}
-              variant={isWalletConnected ? "secondary" : "default"}
-              className="font-semibold"
-            >
-              {isWalletConnected ? "Disconnect Wallet" : "Connect Wallet"}
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Toggle */}
           <button
             className="md:hidden p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -69,7 +85,7 @@ export const Navigation = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden py-4 border-t">
-            {isWalletConnected && (
+            {walletConnected && (
               <div className="flex flex-col gap-4 mb-4">
                 {navItems.map((item) => (
                   <Link
@@ -83,16 +99,20 @@ export const Navigation = () => {
                 ))}
               </div>
             )}
-            <Button
-              onClick={handleConnectWallet}
-              variant={isWalletConnected ? "secondary" : "default"}
-              className="w-full font-semibold"
-            >
-              {isWalletConnected ? "Disconnect Wallet" : "Connect Wallet"}
+
+            <Button onClick={openWalletModal} className="w-full font-semibold">
+              {!walletConnected ? "Connect Wallet" : `${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}`}
             </Button>
           </div>
         )}
       </div>
+
+      {/* Wallet Modal */}
+      <ConnectWalletModal
+        wallets={wallets}
+        isOpen={walletModalOpen}
+        onClose={() => setWalletModalOpen(false)}
+      />
     </nav>
   );
 };
